@@ -1,83 +1,79 @@
 # Quickstart Docker Compose
 
-This guide shows how to get Faultline running with Docker Compose.
+Get Faultline running in under 5 minutes with Docker Compose.
 
 ## Prerequisites
 
-- Docker Engine 20.10.0 or later
-- Docker Compose v2.20.0 or later
+- Docker Engine 20.10.0+
+- Docker Compose v2.20.0+
 
-## Starting the Stack
+## Install & Run
 
-Clone the repository and navigate to the compose directory:
+```bash
+# Clone the repository
+git clone https://github.com/faultline/faultline.git
+cd faultline/compose
 
-git clone <repository-url>
-cd FaultLine/compose
-
-Start the observability stack:
-
+# Start the full stack
 docker compose up -d
+```
 
-This starts:
-- OpenTelemetry Collector (port 4318)
-- Prometheus (port 9090)
-- Loki (port 3100)
-- Tempo (port 3200)
-- Grafana (port 3000)
+## Access Services
 
-## Accessing Services
+```text
+# Grafana (metrics & logs): http://localhost:3000 (admin/admin)
+# Prometheus (metrics): http://localhost:9090
+# Loki (logs): http://localhost:3100
+# Tempo (traces): http://localhost:3200
+# OTel Collector (ingestion): http://localhost:4318
+```
 
-- Grafana: http://localhost:3000 (login: admin/admin)
-- Prometheus: http://localhost:9090
-- Loki: http://localhost:3100
-- Tempo: http://localhost:3200
+## Send Sample Data
 
-## Sending Sample Data
-
-Run the example Node.js application to send sample telemetry:
-
-cd ../examples/node-express
+```bash
+# In a new terminal
+cd examples/node-express
 npm install
-npm start
+npm start &
 
-Then make requests to the example app:
-- Health check: http://localhost:3001/health
-- Slow endpoint: http://localhost:3001/slow
-- Error endpoint: http://localhost:3001/error
+# Test the example app
+curl http://localhost:3001/health
+curl http://localhost:3001/slow
+curl http://localhost:3001/error
+```
+
+## View Telemetry
+
+1. Open Grafana at http://localhost:3000
+2. Navigate to "Service Overview" dashboard
+3. Select your service and environment
+4. Watch metrics, logs, and traces flow in
 
 ## Deploy Markers
 
-To add deploy markers to Grafana, use the deploy marker script:
-
+```bash
+# Add deployment annotations to Grafana
 chmod +x ../scripts/deploy-marker.sh
 ../scripts/deploy-marker.sh \
   --service my-service \
   --env development \
   --version 1.0.0 \
   --message "Initial deployment"
+```
 
 ## Optional Components
 
-Additional components can be started using Docker Compose profiles:
-
-### Host Metrics
-To monitor host system metrics:
-
+```bash
+# Add host metrics monitoring
 docker compose --profile host up -d
 
-### Database Metrics
-To monitor PostgreSQL and Redis:
-
+# Add database metrics (PostgreSQL + Redis)
 docker compose --profile db up -d
+```
 
-## Stopping the Stack
+## Stop Services
 
-To stop all services:
-
+```bash
+# Stop all services
 docker compose down
-
-To stop services and remove volumes:
-
-docker compose down -v
-
-TODO: Document quickstart with Docker Compose
+```

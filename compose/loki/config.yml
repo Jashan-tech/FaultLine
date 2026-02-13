@@ -18,12 +18,19 @@ common:
 schema_config:
   configs:
     - from: 2020-05-15
-      store: boltdb
+      store: boltdb-shipper
       object_store: filesystem
       schema: v11
       index:
         prefix: index_
-        period: 168h
+        period: 24h
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+  filesystem:
+    directory: /loki/chunks
 
 ruler:
   alertmanager_url: http://localhost:9093
