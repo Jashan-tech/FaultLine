@@ -77,3 +77,21 @@ docker compose --profile db up -d
 # Stop all services
 docker compose down
 ```
+
+## Verification Script
+
+To verify that your Docker Compose stack is working correctly, you can use the `scripts/verify.sh` script. This script will:
+
+1. Start the compose stack
+2. Start an example application
+3. Generate traffic to the example app
+4. Check that all services are accessible
+5. Stop the example app and shut down the compose stack
+
+Run the script with:
+
+```bash
+bash scripts/verify.sh
+```
+
+The script will output clear PASS/FAIL messages for each service check.
