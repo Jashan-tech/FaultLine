@@ -85,11 +85,70 @@ services:
       - loki
       - tempo
 
+  postgres:
+    image: postgres:16.4
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: example
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - observability
+    profiles:
+      - db
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/example?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - observability
+    depends_on:
+      - postgres
+    profiles:
+      - db
+
+  redis:
+    image: redis:7.2.7
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - observability
+    profiles:
+      - db
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.57.0
+    container_name: redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis:6379"
+    ports:
+      - "9121:9121"
+    networks:
+      - observability
+    depends_on:
+      - redis
+    profiles:
+      - db
+
 networks:
   observability:
     driver: bridge
 
 volumes:
+  postgres_data:
   prometheus_data:
   loki_data:
   tempo_data:

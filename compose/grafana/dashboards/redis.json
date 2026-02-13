@@ -1,0 +1,89 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Redis",
+    "tags": ["redis"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Connected Clients",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "legendFormat": "Connected Clients"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Commands per Second",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "irate(redis_commands_processed_total[5m])",
+            "legendFormat": "Commands/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count/sec",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Used Memory"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes",
+            "format": "bytes",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Hit Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "irate(redis_keyspace_hits_total[5m]) / (irate(redis_keyspace_hits_total[5m]) + irate(redis_keyspace_misses_total[5m]))",
+            "legendFormat": "Hit Rate"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Ratio",
+            "format": "percentunit",
+            "logBase": 1
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": []
+    }
+  }
+}

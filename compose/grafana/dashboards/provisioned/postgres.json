@@ -1,0 +1,96 @@
+{
+    "id": null,
+    "title": "PostgreSQL",
+    "tags": ["postgres"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Connections",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count{datname=\"$database\", service=\"postgres\"}",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Query Duration",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "irate(pg_stat_database_xact_commit{datname=\"$database\", service=\"postgres\"}[5m]) + irate(pg_stat_database_xact_rollback{datname=\"$database\", service=\"postgres\"}[5m])",
+            "legendFormat": "Transactions/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count/sec",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Cache Hit Ratio",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\"} / (pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\"} + pg_stat_database_blks_read{datname=\"$database\", service=\"postgres\"})",
+            "legendFormat": "Cache Hit Ratio"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Ratio",
+            "format": "percentunit",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Database Size",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "pg_database_size{datname=\"$database\", service=\"postgres\"}",
+            "legendFormat": "Database Size"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes",
+            "format": "bytes",
+            "logBase": 1
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "database",
+          "type": "query",
+          "query": "label_values(pg_stat_database_datname, datname)",
+          "refresh": 1,
+          "options": [],
+          "current": {}
+        }
+      ]
+    }
+  }
