@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: {{ .Values.global.namespace }}
+data:
+  service-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Service Overview",
+        "tags": ["overview"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total[5m]))",
+                "legendFormat": "Requests/sec"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Requests/sec",
+                "format": "short",
+                "logBase": 1
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Error Rate",
+            "type": "graph",
+            "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{status_code=~\"5..|4..\"}[5m]))",
+                "legendFormat": "Errors/sec"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Errors/sec",
+                "format": "short",
+                "logBase": 1
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "P95 Latency",
+            "type": "graph",
+            "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+                "legendFormat": "P95 Latency"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Seconds",
+                "format": "s",
+                "logBase": 1
+              }
+            ]
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "service",
+              "type": "query",
+              "query": "label_values(service)",
+              "refresh": 1,
+              "options": [],
+              "current": {}
+            },
+            {
+              "name": "env",
+              "type": "query",
+              "query": "label_values(env)",
+              "refresh": 1,
+              "options": [],
+              "current": {}
+            }
+          ]
+        }
+      }
+    }

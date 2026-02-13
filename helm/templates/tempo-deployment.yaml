@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+    spec:
+      containers:
+      - name: tempo
+        image: {{ .Values.tempo.image.repository }}:{{ .Values.tempo.image.tag }}
+        ports:
+        - containerPort: 3200
+        - containerPort: 4317
+        - containerPort: 4318
+        command: [ "--config.file=/etc/tempo/config.yml" ]
+        volumeMounts:
+        - name: tempo-storage
+          mountPath: /tmp/tempo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    app: tempo
+  ports:
+    - protocol: TCP
+      port: {{ .Values.tempo.service.port }}
+      targetPort: 3200
+      name: http
+    - protocol: TCP
+      port: 4317
+      targetPort: 4317
+      name: grpc
+    - protocol: TCP
+      port: 4318
+      targetPort: 4318
+      name: otlp-http
+  type: {{ .Values.tempo.service.type }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tempo-storage
+  namespace: {{ .Values.global.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

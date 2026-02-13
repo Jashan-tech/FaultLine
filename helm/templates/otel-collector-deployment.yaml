@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: {{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}
+        ports:
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 8888
+          name: metrics
+        command: ["--config=/etc/otel-collector-config.yaml"]
+        volumeMounts:
+        - name: collector-config
+          mountPath: /etc/otel-collector-config.yaml
+          subPath: collector.yaml
+      volumes:
+      - name: collector-config
+        configMap:
+          name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - protocol: TCP
+      port: {{ .Values.otelCollector.service.port }}
+      targetPort: 4318
+      name: otlp-http
+  type: {{ .Values.otelCollector.service.type }}

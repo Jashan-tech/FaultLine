@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+      - name: loki
+        image: {{ .Values.loki.image.repository }}:{{ .Values.loki.image.tag }}
+        ports:
+        - containerPort: 3100
+        command: [ "-config.file=/etc/loki/local-config.yaml" ]
+        volumeMounts:
+        - name: loki-storage
+          mountPath: /loki
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    app: loki
+  ports:
+    - protocol: TCP
+      port: {{ .Values.loki.service.port }}
+      targetPort: 3100
+      name: http
+  type: {{ .Values.loki.service.type }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-storage
+  namespace: {{ .Values.global.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
