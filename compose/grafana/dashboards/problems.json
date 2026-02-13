@@ -1,0 +1,109 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Problems",
+    "tags": ["problems"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Error Rate by Service",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{env=\"$env\", status_code=~\"5..|4..\"}[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "High Latency Services",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{env=\"$env\"}[5m])) by (le, service))",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "format": "s",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Top Failing Routes",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, sum by (service, route) (rate(http_requests_total{env=\"$env\", status_code=~\"5..|4..\"}[5m])))",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Slowest Routes",
+        "type": "table",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, avg by (service, route) (http_request_duration_seconds_sum{env=\"$env\"} / http_request_duration_seconds_count{env=\"$env\"}))",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Recent Errors",
+        "type": "logs",
+        "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "{env=\"$env\"} |= \"error\" |~ \"(?i)(error|exception|fail)\"",
+            "datasource": {"type": "loki", "uid": "loki"}
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Anomaly Detection (Placeholder)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 24, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "placeholder_anomaly_detection",
+            "legendFormat": "Anomalies"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "env",
+          "type": "query",
+          "query": "label_values(env)",
+          "refresh": 1,
+          "options": [],
+          "current": {}
+        }
+      ]
+    }
+  }
+}

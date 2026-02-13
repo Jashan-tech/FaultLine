@@ -1,0 +1,160 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Service Overview",
+    "tags": ["overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{service=\"$service\", env=\"$env\"}[5m]))",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{service=\"$service\", env=\"$env\", status_code=~\"5..|4..\"}[5m]))",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "format": "short",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "P95 Latency",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"$service\", env=\"$env\"}[5m])) by (le))",
+            "legendFormat": "P95 Latency"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "format": "s",
+            "logBase": 1
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Top Failing Routes",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, sum by (route) (rate(http_requests_total{service=\"$service\", env=\"$env\", status_code=~\"5..|4..\"}[5m])))",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Slowest Routes",
+        "type": "table",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, avg by (route) (http_request_duration_seconds_sum{service=\"$service\", env=\"$env\"} / http_request_duration_seconds_count{service=\"$service\",\n env=\"$env\"}))",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Logs",
+        "type": "logs",
+        "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "{service=\"$service\", env=\"$env\"}",
+            "datasource": {"type": "loki", "uid": "loki"}
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "CPU Usage (Placeholder)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "placeholder_cpu_usage",
+            "legendFormat": "CPU %"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Memory Usage (Placeholder)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "placeholder_memory_usage",
+            "legendFormat": "Memory %"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Database Queries (Placeholder)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 32, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "placeholder_db_queries",
+            "legendFormat": "Queries/sec"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(service)",
+          "refresh": 1,
+          "options": [],
+          "current": {}
+        },
+        {
+          "name": "env",
+          "type": "query",
+          "query": "label_values(env)",
+          "refresh": 1,
+          "options": [],
+          "current": {}
+        }
+      ]
+    }
+  }
+}
