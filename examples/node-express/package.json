@@ -1,0 +1,26 @@
+{
+  "name": "faultline-node-express-example",
+  "version": "1.0.0",
+  "description": "Example Node.js Express app for Faultline observability",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.53.0",
+    "@opentelemetry/sdk-node": "^0.53.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",
+    "@opentelemetry/resources": "^1.26.0",
+    "@opentelemetry/semantic-conventions": "^1.26.0",
+    "@opentelemetry/instrumentation": "^0.53.0",
+    "@opentelemetry/instrumentation-express": "^0.41.0",
+    "@opentelemetry/instrumentation-http": "^0.53.0",
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
