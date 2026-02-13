@@ -1,0 +1,80 @@
+{
+  "family": "faultline-example-app",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "example-app",
+      "image": "YOUR_ECR_REPOSITORY/example-app:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+          "value": "http://localhost:4318"
+        },
+        {
+          "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+          "value": "http/protobuf"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/faultline-example-app",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    },
+    {
+      "name": "otel-collector",
+      "image": "otel/opentelemetry-collector-contrib:0.108.0",
+      "essential": true,
+      "command": ["--config=/etc/otel-collector-config.yaml"],
+      "portMappings": [
+        {
+          "containerPort": 4318,
+          "name": "otlp-http-port",
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/faultline-otel-collector",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "mountPoints": [
+        {
+          "sourceVolume": "collector-config",
+          "containerPath": "/etc/otel-collector-config.yaml",
+          "readOnly": true
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "collector-config",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-YOUR_EFS_ID",
+        "rootDirectory": "/otel-config"
+      }
+    }
+  ]
+}
