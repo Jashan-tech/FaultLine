@@ -43,12 +43,16 @@ export type RollbackRequest = {
   versionId?: string;
 };
 
-export type AlertTemplate = "high_error_rate" | "high_latency_p95" | "service_down";
+export type AlertTemplate =
+  | 'high_error_rate'
+  | 'high_latency_p95'
+  | 'service_down'
+  | 'high_cpu'
+  | 'high_memory';
 
 export type CreateAlertRequest = {
   template: AlertTemplate;
   service: string;
-  symptom?: string;
-  threshold?: number;
-  duration?: string;
+  threshold: number;
+  duration: string;
 };

@@ -21,6 +21,7 @@ Grafana pages are embedded in the console where appropriate so operations and an
 - `console-ui` (Next.js) serves the Console UI under `/`.
 - `console-api` (Node/TypeScript) serves config and operations endpoints under `/api`.
 - Grafana OSS is served behind `/grafana`.
+- OTLP HTTP ingress is available through the gateway at `/otlp`.
 - Core observability services run internal-only on the Docker network:
   - OpenTelemetry Collector
   - Prometheus
@@ -30,7 +31,7 @@ Grafana pages are embedded in the console where appropriate so operations and an
 
 Telemetry path:
 
-1. Apps send OTLP HTTP to the collector (`otel-collector:4318`).
+1. Apps send OTLP HTTP to the collector (`http://localhost:8080/otlp` externally, `otel-collector:4318` internally).
 2. Collector exports traces to Tempo OTLP HTTP (`http://tempo:4318`).
 3. Collector exports OTLP metrics through its Prometheus exporter (`otel-collector:8889/metrics`).
 4. Prometheus scrapes:
@@ -47,27 +48,61 @@ Telemetry path:
 ### Run
 
 ```bash
-docker compose -f compose/docker-compose.yml up -d
+docker compose -f compose/docker-compose.yml up -d --build
 ```
 
 ### Open
 
 - Console: `http://localhost:8080`
+- Getting Started wizard: `http://localhost:8080/getting-started`
 - Grafana (proxied): `http://localhost:8080/grafana`
+
+## Getting Started
+
+Use the Console wizard at `http://localhost:8080/getting-started` for beginner onboarding.
+
+The wizard walks through:
+
+1. Starting the stack
+2. Copy-paste OTEL env vars
+3. Running signal verification (`metrics`, `logs`, `traces`) via `/api/signals`
+
+## Example App (Validation Harness)
+
+`examples/node-express` exists for validation and demos only.
+
+It is used by smoke tests to prove telemetry flow and should not be treated as a product feature.
 
 ## FaultLine Console
 
 The console is intentionally minimal and centered on operations:
 
 - `Overview`: stack health, targets, firing alerts, quick actions
+- `Getting Started`: beginner-friendly onboarding + signal verification
 - `Services`: service list with summary/logs/traces drawer
-- `Explore`: quick links into Grafana Explore
-- Embedded dashboard links use Grafana kiosk mode (`?kiosk`) where supported to reduce chrome in iframe panels
-- `Alerts`: list rules and create generated rules from templates
+- `Explore`: embedded Grafana Explore views
+- `Alerts`: template-based rule creation with preview
 - `Config`: simple mode + optional raw YAML edits
 - `Health`: component checks + Prometheus targets table
 
+Embedded dashboard links use Grafana kiosk mode (`?kiosk`) where supported to reduce iframe chrome.
+
 See `docs/console.md` for details.
+
+## Alert Templates
+
+The Alerts page supports these templates:
+
+- Service Down
+- High Error Rate
+- High Latency (p95)
+- High CPU (host profile)
+- High Memory (host profile)
+
+Templates that require HTTP instrumentation metrics:
+
+- High Error Rate
+- High Latency (p95)
 
 ## Apply and Rollback Behavior
 
@@ -90,10 +125,29 @@ Rollback endpoint:
 
 - `POST /api/config/rollback` restores the latest successful version (or a specified version id).
 
-## Scripts
+## Testing
 
-- `scripts/console_verify.sh`: checks Console root, Grafana via gateway, and Console API endpoints.
-- `scripts/verify.sh`: smoke test through gateway paths.
+### Console checks
+
+```bash
+bash scripts/console_verify.sh
+```
+
+### End-to-end smoke test
+
+```bash
+bash scripts/e2e_smoke.sh
+```
+
+This test uses `examples/node-express` as a harness, generates traffic, and verifies telemetry signal flow through `/api/signals`.
+The harness runs in a temporary Docker container during the test.
+Trace verification is best-effort when Tempo search returns no results; the script will print a warning in that case.
+
+### Gateway smoke test
+
+```bash
+bash scripts/verify.sh
+```
 
 ## Profiles
 

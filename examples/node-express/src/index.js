@@ -2,6 +2,21 @@ require('dotenv').config();
 const express = require('express');
 const sdk = require('./otel');
 
+function startTelemetry() {
+  try {
+    const startResult = sdk.start();
+    if (startResult && typeof startResult.catch === 'function') {
+      startResult.catch((error) => {
+        console.error('Error initializing tracing', error);
+      });
+    }
+  } catch (error) {
+    console.error('Error initializing tracing', error);
+  }
+}
+
+startTelemetry();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const METRIC_BUCKETS = [0.1, 0.3, 0.5, 1, 2, 5];
@@ -114,16 +129,4 @@ app.get('/metrics', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-
-  // Start tracing in the background so HTTP stays available even if exporter startup is slow.
-  try {
-    const startResult = sdk.start();
-    if (startResult && typeof startResult.catch === 'function') {
-      startResult.catch((error) => {
-        console.error('Error initializing tracing', error);
-      });
-    }
-  } catch (error) {
-    console.error('Error initializing tracing', error);
-  }
 });

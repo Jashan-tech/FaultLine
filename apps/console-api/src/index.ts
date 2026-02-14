@@ -1,15 +1,12 @@
 import express from 'express';
 import yaml from 'js-yaml';
-import {
-  appendGeneratedRule,
-  buildAlertRule,
-  parseRuleFile
-} from './lib/alerts.js';
+import { appendGeneratedRule, buildAlertRule, parseRuleFile } from './lib/alerts.js';
 import { applySimpleConfig, buildSimpleConfigModel, loadConfigFiles, saveConfigFiles } from './lib/config.js';
 import { restartContainer } from './lib/docker-control.js';
 import { readTextOrEmpty } from './lib/files.js';
 import { collectHealthSummary } from './lib/health.js';
-import { managedPaths, managedContainers, serviceUrls } from './lib/paths.js';
+import { managedContainers, managedPaths, serviceUrls } from './lib/paths.js';
+import { collectSignals, listServices } from './lib/signals.js';
 import { appendVersion, createSnapshot, readVersions, restoreSnapshot } from './lib/state.js';
 import type { ApplyRequest, CreateAlertRequest, RollbackRequest } from './lib/types.js';
 import { validateConfigPair } from './lib/validation.js';
@@ -80,6 +77,32 @@ app.get('/api/targets', async (_req, res) => {
     return res.json({ targets });
   } catch (error) {
     return res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+app.get('/api/services', async (_req, res) => {
+  try {
+    const services = await listServices();
+    return res.json({ services });
+  } catch (error) {
+    return res.status(500).json({ error: (error as Error).message, services: [] });
+  }
+});
+
+app.get('/api/signals', async (req, res) => {
+  try {
+    const requested = typeof req.query.service === 'string' ? req.query.service.trim() : undefined;
+    const signals = await collectSignals(requested || undefined);
+    return res.json(signals);
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      serviceCandidates: [],
+      metrics: { ok: false, detail: 'Signal check failed' },
+      logs: { ok: false, detail: 'Signal check failed' },
+      traces: { ok: false, detail: 'Signal check failed' },
+      hints: [(error as Error).message]
+    });
   }
 });
 

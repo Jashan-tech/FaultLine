@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IframePanel } from '@/components/iframe-panel';
-import { withKiosk } from '@/lib/grafana-url';
+import {
+  buildDashboardsUrl,
+  buildLogsExploreUrl,
+  buildTracesExploreUrl
+} from '@/lib/grafana-links';
+import { useSelectedService } from '@/lib/selected-service';
 import { cn } from '@/lib/utils';
 
 type Status = {
@@ -35,37 +41,35 @@ const fallback: Status = {
   lastSeen: { traces: null, logs: null, metrics: null }
 };
 
-const liveViews = {
-  dashboards: {
-    label: 'Dashboards',
-    src: withKiosk('/grafana/dashboards?orgId=1')
-  },
-  logs: {
-    label: 'Logs',
-    src:
-      '/grafana/explore?left=' +
-      encodeURIComponent(
-        JSON.stringify({ datasource: 'Loki', queries: [{ expr: '{service="node-express-example"}' }], range: { from: 'now-30m', to: 'now' } })
-      )
-  },
-  traces: {
-    label: 'Traces',
-    src:
-      '/grafana/explore?left=' +
-      encodeURIComponent(
-        JSON.stringify({ datasource: 'Tempo', queries: [{ query: 'service.name=node-express-example' }], range: { from: 'now-30m', to: 'now' } })
-      )
-  }
-} as const;
-
-type LiveViewKey = keyof typeof liveViews;
+type LiveViewKey = 'dashboards' | 'logs' | 'traces';
 
 export default function OverviewPage(): React.JSX.Element {
   const router = useRouter();
+  const [selectedService] = useSelectedService();
   const [status, setStatus] = useState<Status>(fallback);
   const [targets, setTargets] = useState<TargetsResponse>({ targets: [] });
   const [recentAlerts, setRecentAlerts] = useState<AlertRule[]>([]);
   const [liveView, setLiveView] = useState<LiveViewKey>('dashboards');
+
+  const activeService = selectedService || 'node-express-example';
+
+  const liveViews = useMemo(
+    () => ({
+      dashboards: {
+        label: 'Dashboards',
+        src: buildDashboardsUrl(activeService)
+      },
+      logs: {
+        label: 'Logs',
+        src: buildLogsExploreUrl(activeService)
+      },
+      traces: {
+        label: 'Traces',
+        src: buildTracesExploreUrl(activeService)
+      }
+    }),
+    [activeService]
+  );
 
   useEffect(() => {
     void Promise.all([fetch('/api/status'), fetch('/api/targets'), fetch('/api/alerts')])
@@ -95,7 +99,12 @@ export default function OverviewPage(): React.JSX.Element {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Overview</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-semibold">Overview</h2>
+        <Link href="/getting-started" className="text-sm font-medium text-primary underline underline-offset-2">
+          Getting Started
+        </Link>
+      </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         <Card className="h-28">
@@ -142,7 +151,7 @@ export default function OverviewPage(): React.JSX.Element {
           </CardHeader>
           <CardContent className="pt-0">
             <IframePanel
-              title={activeView.label}
+              title={`${activeView.label} (${activeService})`}
               src={activeView.src}
               description="Embedded Grafana view inside the Console."
               iframeClassName="h-[54vh]"

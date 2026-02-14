@@ -20,5 +20,7 @@ check_status "Console Root" "http://localhost:8080/"
 check_status "Grafana Login via Gateway" "http://localhost:8080/grafana/login"
 check_status "Console API Status" "http://localhost:8080/api/status"
 check_status "Console API Targets" "http://localhost:8080/api/targets"
+check_status "Console API Services" "http://localhost:8080/api/services"
+check_status "Console API Signals" "http://localhost:8080/api/signals"
 
 echo "PASS"

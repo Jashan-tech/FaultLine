@@ -1,41 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { IframePanel } from '@/components/iframe-panel';
-import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  buildLogsExploreUrl,
+  buildMetricsExploreUrl,
+  buildTracesExploreUrl
+} from '@/lib/grafana-links';
+import { useSelectedService } from '@/lib/selected-service';
+import { cn } from '@/lib/utils';
 
-const views = {
-  logs: {
-    label: 'Logs',
-    src:
-      '/grafana/explore?left=' +
-      encodeURIComponent(
-        JSON.stringify({ datasource: 'Loki', queries: [{ expr: '{service="node-express-example"}' }], range: { from: 'now-30m', to: 'now' } })
-      )
-  },
-  traces: {
-    label: 'Traces',
-    src:
-      '/grafana/explore?left=' +
-      encodeURIComponent(
-        JSON.stringify({ datasource: 'Tempo', queries: [{ query: 'service.name=node-express-example' }], range: { from: 'now-30m', to: 'now' } })
-      )
-  },
-  metrics: {
-    label: 'Metrics',
-    src:
-      '/grafana/explore?left=' +
-      encodeURIComponent(
-        JSON.stringify({ datasource: 'Prometheus', queries: [{ expr: 'sum(rate(http_requests_total[5m]))' }], range: { from: 'now-30m', to: 'now' } })
-      )
-  }
-} as const;
-
-type ViewKey = keyof typeof views;
+type ViewKey = 'logs' | 'traces' | 'metrics';
 
 export default function ExplorePage(): React.JSX.Element {
+  const [selectedService] = useSelectedService();
   const [view, setView] = useState<ViewKey>('logs');
+
+  const activeService = selectedService || 'node-express-example';
+
+  const views = useMemo(
+    () => ({
+      logs: {
+        label: 'Logs',
+        src: buildLogsExploreUrl(activeService)
+      },
+      traces: {
+        label: 'Traces',
+        src: buildTracesExploreUrl(activeService)
+      },
+      metrics: {
+        label: 'Metrics',
+        src: buildMetricsExploreUrl(activeService)
+      }
+    }),
+    [activeService]
+  );
+
   const active = views[view];
 
   return (
@@ -46,7 +47,7 @@ export default function ExplorePage(): React.JSX.Element {
         <CardHeader>
           <CardTitle>Signal Type</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border bg-muted p-1">
             {(Object.keys(views) as ViewKey[]).map((key) => (
               <button
@@ -62,6 +63,7 @@ export default function ExplorePage(): React.JSX.Element {
               </button>
             ))}
           </div>
+          <span className="text-xs text-muted-foreground">Service: {activeService}</span>
         </CardContent>
       </Card>
 
