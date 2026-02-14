@@ -1,65 +1,62 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-
 rule_files:
-  - "/etc/prometheus/rules/faultline-alerts.yml"
-  - "/etc/prometheus/rules/faultline-generated-alerts.yml"
-
+  - /etc/prometheus/rules/faultline-alerts.yml
+  - /etc/prometheus/rules/faultline-generated-alerts.yml
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: prometheus
     static_configs:
-      - targets: ['localhost:9090']
+      - targets:
+          - localhost:9090
         labels:
           service: prometheus
           env: development
-  
-  # Collector self-observability metrics (internal telemetry).
-  - job_name: 'otel-collector'
+  - job_name: otel-collector
     static_configs:
-      - targets: ['otel-collector:8888']  # Exposes metrics about the collector itself
+      - targets:
+          - otel-collector:8888
         labels:
           service: otel-collector
           env: development
-
-  # Application metrics exported by the collector's Prometheus exporter.
-  - job_name: 'otel-collector-exporter'
+  - job_name: otel-collector-exporter
     static_configs:
-      - targets: ['otel-collector:8889']
+      - targets:
+          - otel-collector:8889
         labels:
           service: otel-collector-exporter
           env: development
-
-  - job_name: 'example-node'
+  - job_name: example-node
     static_configs:
-      - targets: ['host.docker.internal:3001']
+      - targets:
+          - host.docker.internal:3001
         labels:
           service: node-express-example
           env: development
     scrape_interval: 15s
     scrape_timeout: 10s
-
-  - job_name: 'node-exporter'
+  - job_name: node-exporter
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets:
+          - node-exporter:9100
         labels:
           service: node-exporter
           env: development
     scrape_interval: 15s
     scrape_timeout: 10s
-
-  - job_name: 'postgres-exporter'
+  - job_name: postgres-exporter
     static_configs:
-      - targets: ['postgres-exporter:9187']
+      - targets:
+          - postgres-exporter:9187
         labels:
           service: postgres
           env: development
     scrape_interval: 15s
     scrape_timeout: 10s
-
-  - job_name: 'redis-exporter'
+  - job_name: redis-exporter
     static_configs:
-      - targets: ['redis-exporter:9121']
+      - targets:
+          - redis-exporter:9121
         labels:
           service: redis
           env: development

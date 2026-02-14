@@ -88,72 +88,79 @@
       },
       {
         "id": 6,
-        "title": "Logs",
-        "type": "logs",
+        "title": "Service Availability",
+        "type": "graph",
         "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
         "targets": [
           {
-            "refId": "A",
-            "expr": "{service=\"$service\", env=\"$env\"}",
-            "datasource": {"type": "loki", "uid": "loki"}
+            "expr": "avg(up{service=\"$service\", env=\"$env\"})",
+            "legendFormat": "Up"
           }
         ]
       },
       {
         "id": 7,
-        "title": "CPU Usage (Placeholder)",
+        "title": "Requests by Status",
         "type": "graph",
         "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "placeholder_cpu_usage",
-            "legendFormat": "CPU %"
+            "expr": "sum by (status_code) (rate(http_requests_total{service=\"$service\", env=\"$env\"}[5m]))",
+            "legendFormat": "{{status_code}}"
           }
         ]
       },
       {
         "id": 8,
-        "title": "Memory Usage (Placeholder)",
+        "title": "P95 Latency by Route",
         "type": "graph",
         "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "placeholder_memory_usage",
-            "legendFormat": "Memory %"
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"$service\", env=\"$env\"}[5m])) by (le, route))",
+            "legendFormat": "{{route}}"
           }
         ]
       },
       {
         "id": 9,
-        "title": "Database Queries (Placeholder)",
+        "title": "Scrape Samples by Service",
         "type": "graph",
         "gridPos": {"x": 0, "y": 32, "w": 24, "h": 8},
         "targets": [
           {
-            "expr": "placeholder_db_queries",
-            "legendFormat": "Queries/sec"
+            "expr": "sum by (service) (scrape_samples_post_metric_relabeling{env=\"$env\"})",
+            "legendFormat": "{{service}}"
           }
         ]
       }
     ],
     "templating": {
       "list": [
-        {
-          "name": "service",
-          "type": "query",
-          "query": "label_values(service)",
-          "refresh": 1,
-          "options": [],
-          "current": {}
-        },
-        {
-          "name": "env",
-          "type": "query",
-          "query": "label_values(env)",
-          "refresh": 1,
-          "options": [],
-          "current": {}
-        }
+            {
+              "name": "service",
+              "type": "query",
+              "query": "label_values(service)",
+              "refresh": 1,
+              "options": [],
+              "current": {
+                "selected": true,
+                "text": "node-express-example",
+                "value": "node-express-example"
+              }
+            },
+            {
+              "name": "env",
+              "type": "query",
+              "query": "label_values(env)",
+              "refresh": 1,
+              "options": [],
+              "current": {
+                "selected": true,
+                "text": "development",
+                "value": "development"
+              }
+            }
       ]
     }
   }

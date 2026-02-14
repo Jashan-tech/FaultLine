@@ -68,26 +68,25 @@
       },
       {
         "id": 5,
-        "title": "Recent Errors",
-        "type": "logs",
+        "title": "Service Health",
+        "type": "graph",
         "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
         "targets": [
           {
-            "refId": "A",
-            "expr": "{env=\"$env\"} |= \"error\" |~ \"(?i)(error|exception|fail)\"",
-            "datasource": {"type": "loki", "uid": "loki"}
+            "expr": "avg by (service) (up{env=\"$env\"})",
+            "legendFormat": "{{service}}"
           }
         ]
       },
       {
         "id": 6,
-        "title": "Anomaly Detection (Placeholder)",
+        "title": "Potentially Impacted Services",
         "type": "graph",
         "gridPos": {"x": 0, "y": 24, "w": 24, "h": 8},
         "targets": [
           {
-            "expr": "placeholder_anomaly_detection",
-            "legendFormat": "Anomalies"
+            "expr": "sum by (service) (rate(http_requests_total{env=\"$env\", status_code=~\"5..|4..\"}[5m]))",
+            "legendFormat": "{{service}}"
           }
         ]
       }
@@ -100,8 +99,12 @@
           "query": "label_values(env)",
           "refresh": 1,
           "options": [],
-          "current": {}
+          "current": {
+            "selected": true,
+            "text": "development",
+            "value": "development"
+          }
         }
       ]
     }
-  }
+}

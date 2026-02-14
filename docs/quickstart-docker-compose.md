@@ -30,25 +30,6 @@ docker compose up -d
 
 ## Send Sample Data
 
-```bash
-# In a new terminal
-cd examples/node-express
-npm install
-npm start &
-
-# Test the example app
-curl http://localhost:3001/health
-curl http://localhost:3001/slow
-curl http://localhost:3001/error
-```
-
-## View Telemetry
-
-1. Open Grafana at http://localhost:3000
-2. Navigate to "Service Overview" dashboard
-3. Select your service and environment
-4. Watch metrics, logs, and traces flow in
-
 ## Deploy Markers
 
 ```bash

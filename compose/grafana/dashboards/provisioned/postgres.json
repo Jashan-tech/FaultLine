@@ -11,7 +11,7 @@
         "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "pg_stat_activity_count{datname=\"$database\", service=\"postgres\"}",
+            "expr": "pg_stat_activity_count{datname=\"$database\", service=\"postgres\", env=\"$env\"}",
             "legendFormat": "Active Connections"
           }
         ],
@@ -30,7 +30,7 @@
         "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "irate(pg_stat_database_xact_commit{datname=\"$database\", service=\"postgres\"}[5m]) + irate(pg_stat_database_xact_rollback{datname=\"$database\", service=\"postgres\"}[5m])",
+            "expr": "irate(pg_stat_database_xact_commit{datname=\"$database\", service=\"postgres\", env=\"$env\"}[5m]) + irate(pg_stat_database_xact_rollback{datname=\"$database\", service=\"postgres\", env=\"$env\"}[5m])",
             "legendFormat": "Transactions/sec"
           }
         ],
@@ -49,7 +49,7 @@
         "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\"} / (pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\"} + pg_stat_database_blks_read{datname=\"$database\", service=\"postgres\"})",
+            "expr": "pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\", env=\"$env\"} / (pg_stat_database_blks_hit{datname=\"$database\", service=\"postgres\", env=\"$env\"} + pg_stat_database_blks_read{datname=\"$database\", service=\"postgres\", env=\"$env\"})",
             "legendFormat": "Cache Hit Ratio"
           }
         ],
@@ -68,7 +68,7 @@
         "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
         "targets": [
           {
-            "expr": "pg_database_size{datname=\"$database\", service=\"postgres\"}",
+            "expr": "pg_database_size_bytes{datname=\"$database\", service=\"postgres\", env=\"$env\"}",
             "legendFormat": "Database Size"
           }
         ],
@@ -86,11 +86,23 @@
         {
           "name": "database",
           "type": "query",
-          "query": "label_values(pg_stat_database_datname, datname)",
+          "query": "label_values(pg_stat_database_xact_commit{service=\"postgres\", env=\"$env\"}, datname)",
           "refresh": 1,
           "options": [],
           "current": {}
+        },
+        {
+          "name": "env",
+          "type": "query",
+          "query": "label_values(env)",
+          "refresh": 1,
+          "options": [],
+          "current": {
+            "selected": true,
+            "text": "development",
+            "value": "development"
+          }
         }
       ]
     }
-  }
+}
