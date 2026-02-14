@@ -42,11 +42,11 @@ export function Shell({ children }: { children: React.ReactNode }): React.JSX.El
       </aside>
 
       <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-border px-6 py-3">
+        <header className="flex items-center justify-between border-b border-border px-5 py-2.5">
           <Input placeholder="Search" className="max-w-xs" />
           <ThemeToggle />
         </header>
-        <main className="p-6">{children}</main>
+        <main className="px-5 pb-5 pt-3">{children}</main>
       </div>
     </div>
   );
