@@ -72,6 +72,10 @@ See `docs/console.md` for details.
 `POST /api/config/apply` pipeline:
 
 1. Snapshot managed config files to versioned state (`/var/lib/faultline/versions/<timestamp>`).
+   Managed snapshots include:
+   `compose/docker-compose.yml`, `compose/otel/collector.yaml`, `compose/prometheus/prometheus.yml`,
+   `compose/prometheus/rules/faultline-alerts.yml`, `compose/prometheus/rules/faultline-generated-alerts.yml`,
+   `compose/tempo/config.yml`, `compose/loki/config.yml`.
 2. Apply simple model changes and/or raw YAML overrides.
 3. Validate syntax and consistency rules.
 4. Write config files atomically.

@@ -42,14 +42,17 @@ export async function createSnapshot(versionId: string, files: Record<string, st
   return snapshotDir;
 }
 
-export async function restoreSnapshot(versionId: string): Promise<Record<string, string>> {
+export async function restoreSnapshot(versionId: string): Promise<Partial<Record<string, string>>> {
   const snapshotDir = path.join(managedPaths.versionsDir, versionId);
-  const keys = ['compose', 'prometheus', 'collector', 'generatedAlerts'];
-  const restored: Record<string, string> = {};
+  const keys = ['compose', 'prometheus', 'collector', 'tempo', 'loki', 'alertRules', 'generatedAlerts'];
+  const restored: Partial<Record<string, string>> = {};
 
   for (const key of keys) {
     const filePath = path.join(snapshotDir, `${key}.snapshot`);
-    restored[key] = await readTextOrEmpty(filePath);
+    const value = await readTextOrEmpty(filePath);
+    if (value !== '') {
+      restored[key] = value;
+    }
   }
 
   return restored;

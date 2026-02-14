@@ -3,6 +3,7 @@ export type ConfigFiles = {
   prometheusYaml: string;
   collectorYaml: string;
   tempoYaml: string;
+  lokiYaml: string;
   alertRulesYaml: string;
   generatedAlertRulesYaml: string;
 };
@@ -33,6 +34,8 @@ export type ApplyRequest = {
   raw?: {
     collectorYaml?: string;
     prometheusYaml?: string;
+    tempoYaml?: string;
+    lokiYaml?: string;
   };
 };
 

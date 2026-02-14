@@ -23,6 +23,26 @@ async function check(name: string, url: string): Promise<HealthItem> {
   }
 }
 
+async function checkCollector(): Promise<HealthItem> {
+  const health = await check('otel-collector', 'http://otel-collector:13133/health');
+  if (health.ok) {
+    return health;
+  }
+
+  const metrics = await check('otel-collector', serviceUrls.collectorMetrics);
+  if (metrics.ok) {
+    return {
+      ...metrics,
+      detail: 'ok (metrics fallback)'
+    };
+  }
+
+  return {
+    ...health,
+    detail: `${health.detail}; metrics fallback: ${metrics.detail}`
+  };
+}
+
 async function queryPrometheusInstant(query: string): Promise<number | null> {
   try {
     const response = await fetch(`${serviceUrls.prometheus}/api/v1/query?query=${encodeURIComponent(query)}`);
@@ -57,7 +77,7 @@ export async function collectHealthSummary(): Promise<{
     check('prometheus', `${serviceUrls.prometheus}/-/ready`),
     check('loki', `${serviceUrls.loki}/ready`),
     check('tempo', `${serviceUrls.tempo}/status`),
-    check('otel-collector', serviceUrls.collectorMetrics)
+    checkCollector()
   ]);
 
   const [alertsFiring, targetsUpEpoch, lastTraceNano] = await Promise.all([

@@ -8,6 +8,8 @@ export const managedPaths = {
   prometheus: path.join(composeDir, 'prometheus', 'prometheus.yml'),
   collector: path.join(composeDir, 'otel', 'collector.yaml'),
   tempo: path.join(composeDir, 'tempo', 'config.yml'),
+  loki: path.join(composeDir, 'loki', 'config.yml'),
+  rulesDir: path.join(composeDir, 'prometheus', 'rules'),
   alertRules: path.join(composeDir, 'prometheus', 'rules', 'faultline-alerts.yml'),
   generatedAlertRules: path.join(composeDir, 'prometheus', 'rules', 'faultline-generated-alerts.yml'),
   versionsDir: path.join(stateDir, 'versions'),

@@ -46,6 +46,9 @@ Grafana is configured for subpath serving with:
 `POST /api/config/apply`:
 
 1. Snapshot managed files to `/var/lib/faultline/versions/<version-id>`.
+   Managed snapshot set: `compose/docker-compose.yml`, `compose/otel/collector.yaml`, `compose/prometheus/prometheus.yml`,
+   `compose/prometheus/rules/faultline-alerts.yml`, `compose/prometheus/rules/faultline-generated-alerts.yml`,
+   `compose/tempo/config.yml`, `compose/loki/config.yml`.
 2. Build candidate config from simple model and/or raw YAML.
 3. Validate YAML and consistency rules.
 4. Atomically write files.

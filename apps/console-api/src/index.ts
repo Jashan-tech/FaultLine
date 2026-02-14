@@ -91,7 +91,9 @@ app.get('/api/config', async (_req, res) => {
       simple,
       raw: {
         prometheusYaml: files.prometheusYaml,
-        collectorYaml: files.collectorYaml
+        collectorYaml: files.collectorYaml,
+        tempoYaml: files.tempoYaml,
+        lokiYaml: files.lokiYaml
       }
     });
   } catch (error) {
@@ -114,7 +116,12 @@ app.post('/api/config/validate', async (req, res) => {
     if (payload.raw?.collectorYaml) {
       candidate.collectorYaml = payload.raw.collectorYaml;
     }
-
+    if (payload.raw?.tempoYaml) {
+      candidate.tempoYaml = payload.raw.tempoYaml;
+    }
+    if (payload.raw?.lokiYaml) {
+      candidate.lokiYaml = payload.raw.lokiYaml;
+    }
     const validation = validateConfigPair(candidate.prometheusYaml, candidate.collectorYaml, candidate.tempoYaml);
     return res.json(validation);
   } catch (error) {
@@ -133,6 +140,9 @@ app.post('/api/config/apply', async (req, res) => {
       compose: current.composeYaml,
       prometheus: current.prometheusYaml,
       collector: current.collectorYaml,
+      tempo: current.tempoYaml,
+      loki: current.lokiYaml,
+      alertRules: current.alertRulesYaml,
       generatedAlerts: current.generatedAlertRulesYaml
     });
 
@@ -145,6 +155,12 @@ app.post('/api/config/apply', async (req, res) => {
     }
     if (payload.raw?.collectorYaml) {
       candidate.collectorYaml = payload.raw.collectorYaml;
+    }
+    if (payload.raw?.tempoYaml) {
+      candidate.tempoYaml = payload.raw.tempoYaml;
+    }
+    if (payload.raw?.lokiYaml) {
+      candidate.lokiYaml = payload.raw.lokiYaml;
     }
 
     const validation = validateConfigPair(candidate.prometheusYaml, candidate.collectorYaml, candidate.tempoYaml);
@@ -161,22 +177,32 @@ app.post('/api/config/apply', async (req, res) => {
     const changed = {
       compose: candidate.composeYaml !== current.composeYaml,
       prometheus: candidate.prometheusYaml !== current.prometheusYaml,
-      collector: candidate.collectorYaml !== current.collectorYaml
+      collector: candidate.collectorYaml !== current.collectorYaml,
+      tempo: candidate.tempoYaml !== current.tempoYaml,
+      loki: candidate.lokiYaml !== current.lokiYaml,
+      alertRules: candidate.alertRulesYaml !== current.alertRulesYaml,
+      generatedAlerts: candidate.generatedAlertRulesYaml !== current.generatedAlertRulesYaml
     };
 
     await saveConfigFiles({
       composeYaml: candidate.composeYaml,
       prometheusYaml: candidate.prometheusYaml,
-      collectorYaml: candidate.collectorYaml
+      collectorYaml: candidate.collectorYaml,
+      tempoYaml: candidate.tempoYaml,
+      lokiYaml: candidate.lokiYaml,
+      alertRulesYaml: candidate.alertRulesYaml,
+      generatedAlertRulesYaml: candidate.generatedAlertRulesYaml
     });
-
-    if (changed.prometheus) {
-      await reloadPrometheus();
-    }
 
     const restarts: string[] = [];
     if (changed.collector) {
       restarts.push('otel-collector');
+    }
+    if (changed.loki) {
+      restarts.push('loki');
+    }
+    if (changed.tempo) {
+      restarts.push('tempo');
     }
     if (changed.compose) {
       restarts.push('prometheus');
@@ -184,6 +210,10 @@ app.post('/api/config/apply', async (req, res) => {
 
     if (restarts.length > 0) {
       await restartServices(restarts);
+    }
+
+    if (changed.prometheus || changed.compose || changed.alertRules || changed.generatedAlerts) {
+      await reloadPrometheus();
     }
 
     const postApply = await runPostApplyChecks();
@@ -196,11 +226,15 @@ app.post('/api/config/apply', async (req, res) => {
   } catch (error) {
     try {
       const snapshot = await restoreSnapshot(versionId);
+      const current = await loadConfigFiles();
       await saveConfigFiles({
-        composeYaml: snapshot.compose,
-        prometheusYaml: snapshot.prometheus,
-        collectorYaml: snapshot.collector,
-        generatedAlertRulesYaml: snapshot.generatedAlerts
+        composeYaml: snapshot.compose ?? current.composeYaml,
+        prometheusYaml: snapshot.prometheus ?? current.prometheusYaml,
+        collectorYaml: snapshot.collector ?? current.collectorYaml,
+        tempoYaml: snapshot.tempo ?? current.tempoYaml,
+        lokiYaml: snapshot.loki ?? current.lokiYaml,
+        alertRulesYaml: snapshot.alertRules ?? current.alertRulesYaml,
+        generatedAlertRulesYaml: snapshot.generatedAlerts ?? current.generatedAlertRulesYaml
       });
       await reloadPrometheus();
       await restartServices([...managedContainers]);
@@ -246,11 +280,15 @@ app.post('/api/config/rollback', async (req, res) => {
     }
 
     const snapshot = await restoreSnapshot(versionId);
+    const current = await loadConfigFiles();
     await saveConfigFiles({
-      composeYaml: snapshot.compose,
-      prometheusYaml: snapshot.prometheus,
-      collectorYaml: snapshot.collector,
-      generatedAlertRulesYaml: snapshot.generatedAlerts
+      composeYaml: snapshot.compose ?? current.composeYaml,
+      prometheusYaml: snapshot.prometheus ?? current.prometheusYaml,
+      collectorYaml: snapshot.collector ?? current.collectorYaml,
+      tempoYaml: snapshot.tempo ?? current.tempoYaml,
+      lokiYaml: snapshot.loki ?? current.lokiYaml,
+      alertRulesYaml: snapshot.alertRules ?? current.alertRulesYaml,
+      generatedAlertRulesYaml: snapshot.generatedAlerts ?? current.generatedAlertRulesYaml
     });
 
     await reloadPrometheus();

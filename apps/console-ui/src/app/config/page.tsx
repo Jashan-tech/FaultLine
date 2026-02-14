@@ -29,6 +29,7 @@ export default function ConfigPage(): React.JSX.Element {
   const [prometheusYaml, setPrometheusYaml] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [lastActionAt, setLastActionAt] = useState<string | null>(null);
 
   useEffect(() => {
     void fetch('/api/config')
@@ -61,6 +62,7 @@ export default function ConfigPage(): React.JSX.Element {
 
     const data = await response.json();
     setMessage(data.valid ? 'Validation passed' : `Validation failed: ${(data.errors || []).join('; ')}`);
+    setLastActionAt(new Date().toISOString());
   }
 
   async function runApply(): Promise<void> {
@@ -79,6 +81,7 @@ export default function ConfigPage(): React.JSX.Element {
     });
     const data = await response.json();
     setMessage(data.success ? `Applied version ${data.versionId}` : `Apply failed: ${data.error || 'unknown error'}`);
+    setLastActionAt(new Date().toISOString());
   }
 
   async function runRollback(): Promise<void> {
@@ -89,6 +92,7 @@ export default function ConfigPage(): React.JSX.Element {
     });
     const data = await response.json();
     setMessage(data.success ? `Rolled back to ${data.versionId}` : `Rollback failed: ${data.error || 'unknown error'}`);
+    setLastActionAt(new Date().toISOString());
   }
 
   return (
@@ -144,6 +148,7 @@ export default function ConfigPage(): React.JSX.Element {
       </Card>
 
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {lastActionAt ? <p className="text-xs text-muted-foreground">Last action: {lastActionAt}</p> : null}
     </div>
   );
 }

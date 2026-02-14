@@ -91,11 +91,12 @@ function addScrapeTarget(prometheusRaw: string, target: string): string {
 }
 
 export async function loadConfigFiles(): Promise<ConfigFiles> {
-  const [composeYaml, prometheusYamlRaw, collectorYaml, tempoYaml, alertRulesYaml, generatedAlertRulesYaml] = await Promise.all([
+  const [composeYaml, prometheusYamlRaw, collectorYaml, tempoYaml, lokiYaml, alertRulesYaml, generatedAlertRulesYaml] = await Promise.all([
     readTextOrEmpty(managedPaths.compose),
     readTextOrEmpty(managedPaths.prometheus),
     readTextOrEmpty(managedPaths.collector),
     readTextOrEmpty(managedPaths.tempo),
+    readTextOrEmpty(managedPaths.loki),
     readTextOrEmpty(managedPaths.alertRules),
     readTextOrEmpty(managedPaths.generatedAlertRules)
   ]);
@@ -105,6 +106,7 @@ export async function loadConfigFiles(): Promise<ConfigFiles> {
     prometheusYaml: ensureGeneratedRulesIncluded(prometheusYamlRaw),
     collectorYaml,
     tempoYaml,
+    lokiYaml,
     alertRulesYaml,
     generatedAlertRulesYaml
   };
@@ -120,6 +122,15 @@ export async function saveConfigFiles(config: Partial<ConfigFiles>): Promise<voi
   }
   if (config.collectorYaml !== undefined) {
     writes.push(writeFileAtomic(managedPaths.collector, config.collectorYaml));
+  }
+  if (config.tempoYaml !== undefined) {
+    writes.push(writeFileAtomic(managedPaths.tempo, config.tempoYaml));
+  }
+  if (config.lokiYaml !== undefined) {
+    writes.push(writeFileAtomic(managedPaths.loki, config.lokiYaml));
+  }
+  if (config.alertRulesYaml !== undefined) {
+    writes.push(writeFileAtomic(managedPaths.alertRules, config.alertRulesYaml));
   }
   if (config.generatedAlertRulesYaml !== undefined) {
     writes.push(writeFileAtomic(managedPaths.generatedAlertRules, config.generatedAlertRulesYaml));
