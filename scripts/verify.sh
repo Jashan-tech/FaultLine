@@ -40,14 +40,16 @@ sleep 30
 # Start example app in background
 echo "Starting example app..."
 docker rm -f "$EXAMPLE_CONTAINER" >/dev/null 2>&1 || true
-docker run -d --name "$EXAMPLE_CONTAINER" -p 8080:80 nginx:latest >/dev/null
-
-# Generate traffic to example app
-echo "Generating traffic to example app..."
-for i in {1..10}; do
-  curl -s http://localhost:8080/ >/dev/null || true
-  sleep 1
-done
+if docker run -d --name "$EXAMPLE_CONTAINER" -p 8080:80 nginx:latest >/dev/null 2>&1; then
+  # Generate traffic to example app
+  echo "Generating traffic to example app..."
+  for i in {1..10}; do
+    curl -s http://localhost:8080/ >/dev/null || true
+    sleep 1
+  done
+else
+  echo "WARN: Could not start example app container (nginx:latest). Continuing without traffic generation."
+fi
 
 RESULT=0
 
