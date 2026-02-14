@@ -138,7 +138,7 @@ docker compose -f compose/docker-compose.yml down
 
 ```bash
 cd examples/node-express
-npm install
+npm ci
 npm start
 ```
 
@@ -300,3 +300,34 @@ Licensed under the MIT License. See `LICENSE`.
 - `compose/prometheus/prometheus.yml` includes scrape jobs for `node-exporter`, `postgres-exporter`, and `redis-exporter` even when related profiles are not started; those targets can appear `DOWN` unless profile services are running.
 - Collector config exposes a Prometheus exporter on `0.0.0.0:8889`, while Prometheus currently scrapes `otel-collector:8888` (collector self-metrics). If you expect OTLP application metrics through the collector exporter, add/adjust the scrape target accordingly.
 - `examples/node-express/src/otel.js` currently hardcodes trace export to `http://localhost:4318/v1/traces`.
+
+### Known failing state: `npm ci` with DNS resolution errors
+
+In network-restricted environments, dependency install for `examples/node-express` can fail with repeated `EAI_AGAIN` fetch errors, followed by npm's generic:
+
+```text
+npm error Exit handler never called!
+```
+
+Repro command:
+
+```bash
+cd examples/node-express
+npm ci
+```
+
+Workarounds:
+
+- Ensure DNS/network access to `https://registry.npmjs.org`.
+- Configure npm proxy/registry if your environment requires it.
+- Retry after restoring outbound access.
+
+Local debug artifacts are written to:
+
+- `examples/node-express/.npm-cache/_logs/`
+
+TODO pointers:
+
+- `examples/node-express/.npmrc:1`
+- `examples/node-express/.npmrc:2`
+- `examples/node-express/package-lock.json:1`
