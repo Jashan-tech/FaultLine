@@ -7,7 +7,7 @@ services:
     volumes:
       - ./otel/collector.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4318:4318"  # OTLP HTTP receiver
+      - "127.0.0.1:4318:4318"  # OTLP HTTP receiver (host apps -> collector)
     networks:
       - observability
     depends_on:
@@ -32,6 +32,8 @@ services:
       - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - observability
 
@@ -60,6 +62,7 @@ services:
     ports:
       - "3200:3200"     # Tempo HTTP
       - "4317:4317"     # OTLP gRPC
+      - "127.0.0.2:4318:4318"  # OTLP HTTP
     networks:
       - observability
 

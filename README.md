@@ -199,8 +199,9 @@ These are currently hardcoded in `compose/docker-compose.yml`:
 | Prometheus | `9090` |
 | Loki | `3100` |
 | Tempo HTTP | `3200` |
-| OTEL Collector OTLP HTTP | `4318` |
+| OTEL Collector OTLP HTTP | `127.0.0.1:4318` |
 | Tempo OTLP gRPC | `4317` |
+| Tempo OTLP HTTP | `127.0.0.2:4318` |
 | Node Exporter (host profile) | `9100` |
 | PostgreSQL (db profile) | `5432` |
 | Redis (db profile) | `6379` |
@@ -213,12 +214,13 @@ These are currently hardcoded in `compose/docker-compose.yml`:
 Instrumented apps
   -> OTLP HTTP (4318)
   -> OpenTelemetry Collector
-     -> Tempo (traces)
+     -> Tempo OTLP HTTP (tempo:4318) for traces
      -> Loki (logs)
-     -> Prometheus-format metrics endpoint
+     -> Prometheus exporter endpoint (otel-collector:8889/metrics) for OTLP metrics
 
 Prometheus
-  -> Scrapes configured targets
+  -> Scrapes collector self-metrics (otel-collector:8888)
+  -> Scrapes collector Prometheus exporter (otel-collector:8889/metrics)
   -> Evaluates alert rules
 
 Grafana
@@ -298,7 +300,8 @@ Licensed under the MIT License. See `LICENSE`.
 
 - `scripts/verify.sh` intentionally tears down the Compose stack in its cleanup phase (`docker compose ... down`).
 - `compose/prometheus/prometheus.yml` includes scrape jobs for `node-exporter`, `postgres-exporter`, and `redis-exporter` even when related profiles are not started; those targets can appear `DOWN` unless profile services are running.
-- Collector config exposes a Prometheus exporter on `0.0.0.0:8889`, while Prometheus currently scrapes `otel-collector:8888` (collector self-metrics). If you expect OTLP application metrics through the collector exporter, add/adjust the scrape target accordingly.
+- OpenTelemetry Collector uses two different metrics endpoints: `8888` for collector self-metrics/telemetry and `8889` for Prometheus exporter metrics generated from the OTLP metrics pipeline.
+- OTLP HTTP port `4318` is exposed for both collector and Tempo using separate loopback IPs to avoid host-port collision: collector on `127.0.0.1:4318`, Tempo on `127.0.0.2:4318`.
 - `examples/node-express/src/otel.js` currently hardcodes trace export to `http://localhost:4318/v1/traces`.
 
 ### Known failing state: `npm ci` with DNS resolution errors
