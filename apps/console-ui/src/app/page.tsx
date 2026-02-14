@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IframePanel } from '@/components/iframe-panel';
+import { withKiosk } from '@/lib/grafana-url';
 import { cn } from '@/lib/utils';
 
 type Status = {
@@ -37,7 +38,7 @@ const fallback: Status = {
 const liveViews = {
   dashboards: {
     label: 'Dashboards',
-    src: '/grafana/dashboards?orgId=1'
+    src: withKiosk('/grafana/dashboards?orgId=1')
   },
   logs: {
     label: 'Logs',
@@ -93,10 +94,10 @@ export default function OverviewPage(): React.JSX.Element {
   const activeView = liveViews[liveView];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h2 className="text-xl font-semibold">Overview</h2>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <Card className="h-28">
           <CardHeader>
             <CardTitle>Stack Health</CardTitle>
@@ -117,20 +118,20 @@ export default function OverviewPage(): React.JSX.Element {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
         <Card className="min-h-[38rem]">
-          <CardHeader className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <CardHeader className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle>Live View</CardTitle>
-              <div className="inline-flex rounded-md border border-border bg-muted p-1">
+              <div className="inline-flex rounded-md border border-border bg-muted/70 p-1">
                 {(Object.keys(liveViews) as LiveViewKey[]).map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setLiveView(key)}
                     className={cn(
-                      'rounded px-3 py-1.5 text-sm transition-colors',
-                      liveView === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'
+                      'rounded px-3 py-1 text-xs font-medium transition-colors',
+                      liveView === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent/80'
                     )}
                   >
                     {liveViews[key].label}
@@ -149,7 +150,7 @@ export default function OverviewPage(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <div className="grid content-start gap-4">
+        <div className="grid content-start gap-3">
           <Card className="min-h-44">
             <CardHeader>
               <CardTitle>Actions</CardTitle>

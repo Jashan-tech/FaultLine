@@ -3,33 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --background: 220 23% 98%;
+  --foreground: 222 26% 16%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 40%;
-  --border: 214 32% 91%;
-  --primary: 173 80% 35%;
+  --card-foreground: 222 26% 16%;
+  --muted: 220 20% 95%;
+  --muted-foreground: 220 10% 38%;
+  --border: 220 18% 86%;
+  --primary: 216 88% 57%;
   --primary-foreground: 0 0% 100%;
-  --accent: 173 40% 92%;
-  --accent-foreground: 173 80% 20%;
+  --accent: 216 45% 92%;
+  --accent-foreground: 222 22% 18%;
 }
 
 .dark {
-  --background: 222 47% 11%;
-  --foreground: 210 40% 96%;
-  --card: 224 44% 14%;
-  --card-foreground: 210 40% 96%;
-  --muted: 224 35% 20%;
-  --muted-foreground: 217 11% 65%;
-  --border: 217 20% 25%;
-  --primary: 173 70% 42%;
-  --primary-foreground: 222 47% 11%;
-  --accent: 173 28% 22%;
-  --accent-foreground: 173 40% 90%;
+  --background: 220 20% 10%;
+  --foreground: 210 18% 90%;
+  --card: 220 16% 14%;
+  --card-foreground: 210 18% 90%;
+  --muted: 220 15% 18%;
+  --muted-foreground: 217 10% 68%;
+  --border: 220 13% 24%;
+  --primary: 216 85% 62%;
+  --primary-foreground: 220 20% 10%;
+  --accent: 220 14% 21%;
+  --accent-foreground: 210 16% 90%;
 }
 
 body {
-  @apply bg-background text-foreground;
+  @apply bg-background text-[13px] text-foreground antialiased;
 }

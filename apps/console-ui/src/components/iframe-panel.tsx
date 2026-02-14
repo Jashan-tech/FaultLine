@@ -23,8 +23,8 @@ export function IframePanel({
   const { resolvedTheme } = useTheme();
 
   return (
-    <div className={cn('flex h-full flex-col gap-3', className)}>
-      <div className="flex items-start justify-between gap-3">
+    <div className={cn('flex h-full flex-col gap-2', className)}>
+      <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <h3 className="text-base font-semibold">{title}</h3>
           {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
@@ -43,14 +43,14 @@ export function IframePanel({
 
       <div
         className={cn(
-          'overflow-hidden rounded-xl border border-border',
+          'overflow-hidden rounded-lg border border-border',
           resolvedTheme === 'dark' ? 'bg-muted/20' : 'bg-card'
         )}
       >
         <iframe
           src={src}
           title={title}
-          className={cn('block h-[62vh] w-full border-0', iframeClassName)}
+          className={cn('block h-[64vh] w-full border-0', iframeClassName)}
           allowFullScreen
           loading="lazy"
           referrerPolicy="no-referrer"

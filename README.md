@@ -13,6 +13,7 @@ FaultLine now runs with a single public entrypoint:
 
 The FaultLine Console is the control plane (config, health, alert generation, apply/rollback).
 Grafana is the view plane (dashboards, explore, traces, logs, metrics).
+Grafana pages are embedded in the console where appropriate so operations and analysis stay in one UI.
 
 ## Architecture
 
@@ -61,6 +62,7 @@ The console is intentionally minimal and centered on operations:
 - `Overview`: stack health, targets, firing alerts, quick actions
 - `Services`: service list with summary/logs/traces drawer
 - `Explore`: quick links into Grafana Explore
+- Embedded dashboard links use Grafana kiosk mode (`?kiosk`) where supported to reduce chrome in iframe panels
 - `Alerts`: list rules and create generated rules from templates
 - `Config`: simple mode + optional raw YAML edits
 - `Health`: component checks + Prometheus targets table
@@ -105,9 +107,12 @@ Compose profiles are preserved:
 `console-api` mounts `/var/run/docker.sock` so it can restart containers and orchestrate apply/rollback.
 
 This effectively grants Docker control to the API container.
+Grafana embedding is enabled (`GF_SECURITY_ALLOW_EMBEDDING=true`) for this local appliance-style setup.
 
 Use this in local, trusted environments only.
 Do not expose this stack directly to untrusted networks without additional hardening, authentication, and network controls.
+
+The console theme is intentionally styled close to Grafana (compact, panel-oriented, neutral surfaces) for seamless embedding.
 
 ## Ports
 
