@@ -1,48 +1,40 @@
 # FaultLine
 
-Open-source observability stack for local and containerized workloads using OpenTelemetry, Prometheus, Loki, Tempo, and Grafana.
+FaultLine is a self-hosted observability stack with a built-in control plane UI.
 
-## Overview
+## What Changed
 
-- Runs a full observability stack with Docker Compose from the `compose/` directory configuration.
-- Receives OTLP traffic over HTTP (`4318`) through OpenTelemetry Collector.
-- Stores and visualizes telemetry with Prometheus (metrics), Loki (logs), Tempo (traces), and Grafana dashboards.
-- Includes optional profiles for host metrics (`node-exporter`) and database metrics (`postgres`/`redis` exporters).
-- Provides operational helpers such as a smoke-test script (`scripts/verify.sh`) and deploy marker annotations (`scripts/deploy-marker.sh`).
+FaultLine now runs with a single public entrypoint:
 
-## Key Features
+- Start command: `docker compose -f compose/docker-compose.yml up -d`
+- Console URL: `http://localhost:8080`
+- Grafana URL (proxied): `http://localhost:8080/grafana`
+- Console API (proxied): `http://localhost:8080/api`
 
-- Preconfigured Docker Compose stack:
-  - OpenTelemetry Collector (`otel/opentelemetry-collector-contrib:0.108.0`)
-  - Prometheus (`prom/prometheus:v2.54.1`)
-  - Loki (`grafana/loki:3.1.0`)
-  - Tempo (`grafana/tempo:2.6.0`)
-  - Grafana (`grafana/grafana-enterprise:11.2.0`)
-- Grafana provisioning for datasources and dashboards at startup.
-- Included dashboards:
-  - `Service Overview`
-  - `Problems`
-  - `PostgreSQL`
-  - `Redis`
-  - `Infrastructure`
-- Prometheus alert rules in `compose/prometheus/rules/faultline-alerts.yml`:
-  - `HighErrorRate`, `HighLatency`, `ServiceDown`, `HighCPUUsage`, `HighMemoryUsage`
-- Optional Docker Compose profiles:
-  - `db`: PostgreSQL + PostgreSQL exporter + Redis + Redis exporter
-  - `host`: Node Exporter
-- Deployment templates:
-  - ECS task definition template at `ecs/taskdef-example.json`
-  - Helm chart at `helm/`
+The FaultLine Console is the control plane (config, health, alert generation, apply/rollback).
+Grafana is the view plane (dashboards, explore, traces, logs, metrics).
 
-## Demo / Screenshots
+## Architecture
 
-No screenshots are currently committed to this repository.
+- `gateway` (Caddy) is the only service that publishes a host port (`8080`).
+- `console-ui` (Next.js) serves the Console UI under `/`.
+- `console-api` (Node/TypeScript) serves config and operations endpoints under `/api`.
+- Grafana OSS is served behind `/grafana`.
+- Core observability services run internal-only on the Docker network:
+  - OpenTelemetry Collector
+  - Prometheus
+  - Loki
+  - Tempo
+  - Grafana OSS
 
-If you want visuals for documentation, suggested captures are:
+Telemetry path:
 
-- Grafana home with provisioned datasources
-- `Service Overview` dashboard with incoming telemetry
-- Prometheus `/targets` page
+1. Apps send OTLP HTTP to the collector (`otel-collector:4318`).
+2. Collector exports traces to Tempo OTLP HTTP (`http://tempo:4318`).
+3. Collector exports OTLP metrics through its Prometheus exporter (`otel-collector:8889/metrics`).
+4. Prometheus scrapes:
+   - `otel-collector:8888` (collector self-metrics)
+   - `otel-collector:8889` (application metrics from OTLP metrics pipeline)
 
 ## Quickstart
 
@@ -50,287 +42,80 @@ If you want visuals for documentation, suggested captures are:
 
 - Docker Engine 20.10+
 - Docker Compose v2.20+
-- Node.js (only needed for running the example app)
 
-### Start the stack
+### Run
 
 ```bash
-git clone https://github.com/Jashan-tech/FaultLine.git
-cd FaultLine
-
 docker compose -f compose/docker-compose.yml up -d
 ```
 
-### Access services
+### Open
 
-- Grafana: <http://localhost:3000> (`admin` / `admin`)
-- Prometheus: <http://localhost:9090>
-- Loki: <http://localhost:3100>
-- Tempo: <http://localhost:3200>
-- OTLP HTTP ingest: <http://localhost:4318>
+- Console: `http://localhost:8080`
+- Grafana (proxied): `http://localhost:8080/grafana`
 
-### Run the smoke test
+## FaultLine Console
 
-```bash
-chmod +x scripts/verify.sh
-./scripts/verify.sh
-```
+The console is intentionally minimal and centered on operations:
 
-Expected terminal outcome: `PASS`
+- `Overview`: stack health, targets, firing alerts, quick actions
+- `Services`: service list with summary/logs/traces drawer
+- `Explore`: quick links into Grafana Explore
+- `Alerts`: list rules and create generated rules from templates
+- `Config`: simple mode + optional raw YAML edits
+- `Health`: component checks + Prometheus targets table
 
-## Installation
+See `docs/console.md` for details.
 
-### Local development setup
+## Apply and Rollback Behavior
 
-1. Clone the repository.
-2. Start the Compose stack.
-3. Optionally run the example app.
+`POST /api/config/apply` pipeline:
 
-```bash
-git clone https://github.com/Jashan-tech/FaultLine.git
-cd FaultLine
-docker compose -f compose/docker-compose.yml up -d
-```
+1. Snapshot managed config files to versioned state (`/var/lib/faultline/versions/<timestamp>`).
+2. Apply simple model changes and/or raw YAML overrides.
+3. Validate syntax and consistency rules.
+4. Write config files atomically.
+5. Reload Prometheus via `POST /-/reload`.
+6. Restart impacted services through Docker API (`docker.sock`) when needed.
+7. Run health checks.
+8. If checks fail, automatically rollback to the previous snapshot and re-run reload/restarts.
 
-### Optional Docker Compose profiles
+Rollback endpoint:
 
-```bash
-# Database metrics
-docker compose -f compose/docker-compose.yml --profile db up -d
+- `POST /api/config/rollback` restores the latest successful version (or a specified version id).
 
-# Host metrics
-docker compose -f compose/docker-compose.yml --profile host up -d
+## Scripts
 
-# Combined
-docker compose -f compose/docker-compose.yml --profile db --profile host up -d
-```
+- `scripts/console_verify.sh`: checks Console root, Grafana via gateway, and Console API endpoints.
+- `scripts/verify.sh`: smoke test through gateway paths.
 
-### Optional Kubernetes (Helm)
+## Profiles
 
-```bash
-helm lint ./helm
-helm template faultline ./helm
-```
+Compose profiles are preserved:
 
-### Optional ECS template
+- `db`: PostgreSQL + Redis + exporters
+- `host`: node-exporter
 
-- Start from `ecs/taskdef-example.json` and replace placeholder IAM, ECR, and EFS values.
+## Security Notes
 
-## Usage
+`console-api` mounts `/var/run/docker.sock` so it can restart containers and orchestrate apply/rollback.
 
-### Common operations
+This effectively grants Docker control to the API container.
 
-```bash
-# Start stack
-docker compose -f compose/docker-compose.yml up -d
+Use this in local, trusted environments only.
+Do not expose this stack directly to untrusted networks without additional hardening, authentication, and network controls.
 
-# Check status
-docker compose -f compose/docker-compose.yml ps
+## Ports
 
-# View logs
-docker compose -f compose/docker-compose.yml logs -f
+Public host ports:
 
-# Stop stack
-docker compose -f compose/docker-compose.yml down
-```
+- `8080` (gateway only)
 
-### Run the Node Express example
+All other service ports are internal to the `observability` Docker network.
 
-```bash
-cd examples/node-express
-npm ci
-npm start
-```
+## References
 
-Then exercise the endpoints:
-
-- <http://localhost:3001/health>
-- <http://localhost:3001/slow>
-- <http://localhost:3001/error>
-
-### Post a deploy marker to Grafana
-
-```bash
-chmod +x scripts/deploy-marker.sh
-./scripts/deploy-marker.sh \
-  --service my-service \
-  --env production \
-  --version 1.2.3 \
-  --message "Release"
-```
-
-### Generate a repository snapshot (helper script)
-
-```bash
-bash scripts/repo_snapshot.sh
-```
-
-Outputs are written to `/tmp/faultline_snapshot`.
-
-## Configuration
-
-### Environment variables
-
-| Variable | Default | Required | Used by | Purpose |
-|---|---|---|---|---|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | Recommended for instrumented apps | Your application | OTLP collector endpoint |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Recommended for instrumented apps | Your application | OTLP transport protocol |
-| `OTEL_SERVICE_NAME` | none | Recommended | Your application | Logical service name in telemetry |
-| `OTEL_RESOURCE_ATTRIBUTES` | none | Optional | Your application | Additional resource labels |
-| `OTEL_EXPORTER_OTLP_HEADERS` | none | Optional | Your application | OTLP auth/custom headers |
-| `PORT` | `8080` | Optional | `examples/node-express` | Example app listen port |
-| `GRAFANA_URL` | `http://localhost:3000` | Optional | `scripts/deploy-marker.sh` | Grafana API base URL |
-| `GRAFANA_USER` | `admin` | Optional | `scripts/deploy-marker.sh` | Grafana username |
-| `GRAFANA_PASS` | `admin` | Optional | `scripts/deploy-marker.sh` | Grafana password |
-
-### Compose-defined defaults
-
-These are currently hardcoded in `compose/docker-compose.yml`:
-
-- PostgreSQL: `POSTGRES_DB=example`, `POSTGRES_USER=user`, `POSTGRES_PASSWORD=password`
-- PostgreSQL exporter DSN: `postgresql://user:password@postgres:5432/example?sslmode=disable`
-- Redis exporter target: `redis:6379`
-
-### Default ports
-
-| Service | Port |
-|---|---|
-| Grafana | `3000` |
-| Prometheus | `9090` |
-| Loki | `3100` |
-| Tempo HTTP | `3200` |
-| OTEL Collector OTLP HTTP | `127.0.0.1:4318` |
-| Tempo OTLP gRPC | `4317` |
-| Tempo OTLP HTTP | `127.0.0.2:4318` |
-| Node Exporter (host profile) | `9100` |
-| PostgreSQL (db profile) | `5432` |
-| Redis (db profile) | `6379` |
-| PostgreSQL exporter (db profile) | `9187` |
-| Redis exporter (db profile) | `9121` |
-
-## Architecture / How It Works
-
-```text
-Instrumented apps
-  -> OTLP HTTP (4318)
-  -> OpenTelemetry Collector
-     -> Tempo OTLP HTTP (tempo:4318) for traces
-     -> Loki (logs)
-     -> Prometheus exporter endpoint (otel-collector:8889/metrics) for OTLP metrics
-
-Prometheus
-  -> Scrapes collector self-metrics (otel-collector:8888)
-  -> Scrapes collector Prometheus exporter (otel-collector:8889/metrics)
-  -> Evaluates alert rules
-
-Grafana
-  -> Uses provisioned datasources (Prometheus, Loki, Tempo)
-  -> Loads provisioned dashboards from compose/grafana/dashboards/provisioned
-```
-
-Primary config files:
-
-- `compose/otel/collector.yaml`
-- `compose/prometheus/prometheus.yml`
-- `compose/loki/config.yml`
-- `compose/tempo/config.yml`
-- `compose/grafana/provisioning/datasources/ds.yml`
-- `compose/grafana/provisioning/dashboards/dashboards.yml`
-
-## Testing and Validation
-
-### Automated smoke test
-
-```bash
-chmod +x scripts/verify.sh
-./scripts/verify.sh
-```
-
-What it checks:
-
-- Stack startup via Docker Compose
-- Grafana health endpoint (`/healthz`)
-- Prometheus readiness (`/-/ready`)
-- Loki readiness (`/ready`)
-- Tempo status (`/status`)
-
-### Manual checks
-
-```bash
-docker compose -f compose/docker-compose.yml ps
-curl -sS http://localhost:9090/api/v1/targets | head
-curl -sS http://localhost:9090/api/v1/rules | head
-```
-
-## Project Structure
-
-```text
-compose/                  Docker Compose stack + service configs
-  grafana/                Datasource/dashboard provisioning and dashboards
-  loki/                   Loki config
-  otel/                   OpenTelemetry Collector config
-  prometheus/             Prometheus config + alert rules
-  tempo/                  Tempo config
-docs/                     Operational guides (compose, db/host metrics, ECS, Helm)
-ecs/                      ECS task definition template
-examples/node-express/    Example instrumented Node.js app
-helm/                     Helm chart and templates
-scripts/                  Utility scripts (verify, deploy marker, repo snapshot)
-```
-
-## Contributing
-
-A dedicated `CONTRIBUTING.md` is not present yet.
-
-Current repository workflow expectations are documented in `AGENTS.md`. At minimum, contributions should:
-
-- Keep changes scoped and reviewable.
-- Validate behavior locally (for stack changes, run `./scripts/verify.sh`).
-- Include clear commit messages and PR descriptions.
-
-## Security
-
-A dedicated `SECURITY.md` policy is not currently present in this repository.
-
-## License
-
-Licensed under the MIT License. See `LICENSE`.
-
-## Assumptions / Notes
-
-- `scripts/verify.sh` intentionally tears down the Compose stack in its cleanup phase (`docker compose ... down`).
-- `compose/prometheus/prometheus.yml` includes scrape jobs for `node-exporter`, `postgres-exporter`, and `redis-exporter` even when related profiles are not started; those targets can appear `DOWN` unless profile services are running.
-- OpenTelemetry Collector uses two different metrics endpoints: `8888` for collector self-metrics/telemetry and `8889` for Prometheus exporter metrics generated from the OTLP metrics pipeline.
-- OTLP HTTP port `4318` is exposed for both collector and Tempo using separate loopback IPs to avoid host-port collision: collector on `127.0.0.1:4318`, Tempo on `127.0.0.2:4318`.
-- `examples/node-express/src/otel.js` currently hardcodes trace export to `http://localhost:4318/v1/traces`.
-
-### Known failing state: `npm ci` with DNS resolution errors
-
-In network-restricted environments, dependency install for `examples/node-express` can fail with repeated `EAI_AGAIN` fetch errors, followed by npm's generic:
-
-```text
-npm error Exit handler never called!
-```
-
-Repro command:
-
-```bash
-cd examples/node-express
-npm ci
-```
-
-Workarounds:
-
-- Ensure DNS/network access to `https://registry.npmjs.org`.
-- Configure npm proxy/registry if your environment requires it.
-- Retry after restoring outbound access.
-
-Local debug artifacts are written to:
-
-- `examples/node-express/.npm-cache/_logs/`
-
-TODO pointers:
-
-- `examples/node-express/.npmrc:1`
-- `examples/node-express/.npmrc:2`
-- `examples/node-express/package-lock.json:1`
+- Console details: `docs/console.md`
+- Compose stack: `compose/docker-compose.yml`
+- Collector config: `compose/otel/collector.yaml`
+- Prometheus config: `compose/prometheus/prometheus.yml`

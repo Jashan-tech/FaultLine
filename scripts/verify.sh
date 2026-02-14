@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Script to verify the compose stack is working correctly
+# Script to verify the compose stack is working correctly through the FaultLine gateway
 
 EXAMPLE_CONTAINER="example-app"
 
@@ -15,7 +15,7 @@ trap cleanup EXIT
 check_with_retry() {
   local name="$1"
   local url="$2"
-  local attempts=30
+  local attempts=40
   local delay=2
 
   echo "Checking ${name}..."
@@ -38,13 +38,14 @@ echo "Waiting for services to be ready..."
 sleep 30
 
 # Start example app in background
+# Keep this traffic generator behavior from the existing smoke test,
+# but avoid port conflict with gateway (8080).
 echo "Starting example app..."
 docker rm -f "$EXAMPLE_CONTAINER" >/dev/null 2>&1 || true
-if docker run -d --name "$EXAMPLE_CONTAINER" -p 8080:80 nginx:latest >/dev/null 2>&1; then
-  # Generate traffic to example app
+if docker run -d --name "$EXAMPLE_CONTAINER" -p 18080:80 nginx:latest >/dev/null 2>&1; then
   echo "Generating traffic to example app..."
-  for i in {1..10}; do
-    curl -s http://localhost:8080/ >/dev/null || true
+  for _ in {1..10}; do
+    curl -s http://localhost:18080/ >/dev/null || true
     sleep 1
   done
 else
@@ -53,20 +54,19 @@ fi
 
 RESULT=0
 
-# Check services
-if ! check_with_retry "Grafana" "http://localhost:3000/healthz"; then
+if ! check_with_retry "FaultLine Console" "http://localhost:8080/"; then
   RESULT=1
 fi
 
-if ! check_with_retry "Prometheus" "http://localhost:9090/-/ready"; then
+if ! check_with_retry "Grafana via Gateway" "http://localhost:8080/grafana/login"; then
   RESULT=1
 fi
 
-if ! check_with_retry "Loki" "http://localhost:3100/ready"; then
+if ! check_with_retry "Console API Status" "http://localhost:8080/api/status"; then
   RESULT=1
 fi
 
-if ! check_with_retry "Tempo" "http://localhost:3200/status"; then
+if ! check_with_retry "Console API Targets" "http://localhost:8080/api/targets"; then
   RESULT=1
 fi
 

@@ -1,0 +1,51 @@
+export type ConfigFiles = {
+  composeYaml: string;
+  prometheusYaml: string;
+  collectorYaml: string;
+  tempoYaml: string;
+  alertRulesYaml: string;
+  generatedAlertRulesYaml: string;
+};
+
+export type SimpleConfigModel = {
+  enableDbProfile: boolean;
+  enableHostProfile: boolean;
+  addScrapeTarget: string;
+  prometheusRetention: string;
+  metricsPipelineEnabled: boolean;
+};
+
+export type ValidateResult = {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
+export type VersionRecord = {
+  id: string;
+  createdAt: string;
+  success: boolean;
+  error?: string;
+};
+
+export type ApplyRequest = {
+  simple?: Partial<SimpleConfigModel>;
+  raw?: {
+    collectorYaml?: string;
+    prometheusYaml?: string;
+  };
+};
+
+export type RollbackRequest = {
+  versionId?: string;
+};
+
+export type AlertTemplate = "high_error_rate" | "high_latency_p95" | "service_down";
+
+export type CreateAlertRequest = {
+  template: AlertTemplate;
+  service: string;
+  symptom?: string;
+  threshold?: number;
+  duration?: string;
+};
